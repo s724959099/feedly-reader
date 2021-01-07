@@ -128,6 +128,7 @@ async def read_article_template(terminal: TerminalCLI):
 
 
 async def get_feedly_content(process_step):
+    # todo delete
     browser = await launch(dict(
         headless=False,
         defaultViewport=None,
