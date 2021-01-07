@@ -3,10 +3,7 @@ import asyncio
 from controller import item_crud
 from util import Ezdict, Table, select_menus
 from functools import partial
-import webbrowser
 import os
-from pyppeteer import launch
-from pyquery import PyQuery as pq
 from pony.orm import raw_sql
 from gui_terminal import terminal_window, TerminalCLI
 from typing import Callable
@@ -107,7 +104,7 @@ async def read_all_point_article(terminal: TerminalCLI, **kwargs):
 
     def regexp(expr, item):
         reg = re.compile(expr)
-        return reg.search(item) is not None
+        return reg.search(item.lower()) is not None
 
     with db_session():
         conn = db.get_connection()
