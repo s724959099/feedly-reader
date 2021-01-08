@@ -82,10 +82,10 @@ class TerminalCLI:
         menu = self.menu_list[self.menu_select_index]
         await menu.command(terminal)
 
-    async def up_command(self):
+    async def up_command(self, terminal: Any):
         self.menu_select_index = max(0, self.menu_select_index - 1)
 
-    async def down_command(self):
+    async def down_command(self, terminal: Any):
         self.menu_select_index = min(len(self.menu_list) - 1, self.menu_select_index + 1)
 
     def add_row(self, text, next_count=True):

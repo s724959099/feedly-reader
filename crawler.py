@@ -3,6 +3,18 @@ from pyquery import PyQuery as pq
 import webbrowser
 import asyncio
 import typing
+from util import Ezdict
+import os
+
+
+def get_env_file():
+    with open('.env') as f:
+        env = f.read()
+    dct = dict()
+    for line in env.split():
+        key, val = line.split('=')
+        dct[key.strip()] = val.strip()
+    return dct
 
 
 class FeedlyCralwer:
@@ -19,6 +31,9 @@ class FeedlyCralwer:
         ))
         self.page = await self.browser.newPage()
 
+    async def close_browser(self):
+        await self.browser.close()
+
     async def goto_feedly_index(self):
         await self.page.goto('https://feedly.com/i/welcome/logged-out')
 
@@ -27,7 +42,10 @@ class FeedlyCralwer:
         await self.page.waitForSelector('a.button.facebook')
         await self.page.click('a.button.facebook')
 
-    async def fb_login(self, account, password):
+    async def fb_login(self):
+        env = get_env_file()
+        account = env.get('ACCOUNT')
+        password = env.get('PASSWORD')
         await self.page.waitForSelector('#email')
         await self.page.type('#email', account)
         await self.page.type('#pass', password)
@@ -69,12 +87,12 @@ class FeedlyCralwer:
             ret.append(item)
         return ret
 
-    async def get_result(self, account, password):
+    async def get_result(self):
         # todo 耦合怎麼辦 跟進度
         await self.init_browser()
         await self.goto_feedly_index()
         await self.goto_fb_login_page()
-        await self.fb_login(account, password)
+        await self.fb_login()
         await self.click_all_page()
         await self.scroll_page()
         return await self.get_data()
@@ -82,4 +100,5 @@ class FeedlyCralwer:
 
 if __name__ == '__main__':
     crawler = FeedlyCralwer()
+    data = asyncio.run(crawler.get_result())
     print()

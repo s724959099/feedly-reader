@@ -60,6 +60,7 @@ crawler
 智慧
 解释
 股市
+pattern
 奇淫
 技巧
 期貨

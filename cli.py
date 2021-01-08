@@ -7,6 +7,26 @@ import os
 from pony.orm import raw_sql
 from gui_terminal import terminal_window, TerminalCLI
 from typing import Callable
+import webbrowser
+from model import db
+from pony.orm import db_session
+import os
+# todo color
+from curtsies.fmtfuncs import (
+    black, red, green, yellow, blue, magenta, cyan, gray, on_black, on_dark, on_red,
+    on_green, on_yellow, on_blue, on_magenta, on_cyan, on_gray, bold, dark, underline, blink,
+    invert, plain
+)
+
+with open(os.path.join(os.path.dirname(__file__), 'keyword.txt'), 'r', encoding="utf-8") as f:
+    keywords = f.read().split('\n')
+pattern = "|".join(keywords)
+
+
+def regexp(expr, item):
+    reg = re.compile(expr)
+    return reg.search(item.lower()) is not None
+
 
 # todo 用global 這樣寫不好
 offset = 0
@@ -69,6 +89,7 @@ async def read_articles(terminal: TerminalCLI, **kwargs):
     page_list = []
     for num in range(1, page_count + 1):
         if num == page:
+            # todo bold cyan
             page_list.append(str(bold(cyan(str(num)))))
         else:
             page_list.append(str(num))
@@ -87,25 +108,22 @@ async def read_articles(terminal: TerminalCLI, **kwargs):
 async def read_all_not_read_article(terminal: TerminalCLI, **kwargs):
     global lambda_fn
     global execute_fn
-    execute_fn = read_all_not_read_article
-    lambda_fn = lambda x: not x.read
-    await read_articles(terminal, **kwargs)
+    with db_session():
+        conn = db.get_connection()
+        conn.create_function('REGEXP', 2, regexp)
+
+        execute_fn = read_all_point_article
+
+        lambda_fn = lambda x: not x.read and not (
+                raw_sql("x.title REGEXP $(pattern)") or
+                raw_sql("x.summary REGEXP $(pattern)")
+        )
+        await read_articles(terminal, **kwargs)
 
 
 async def read_all_point_article(terminal: TerminalCLI, **kwargs):
     global lambda_fn
     global execute_fn
-    import os
-    from model import db
-    from pony.orm import db_session
-    with open(os.path.join(os.path.dirname(__file__), 'keyword.txt'), 'r', encoding="utf-8") as f:
-        keywords = f.read().split('\n')
-    pattern = "|".join(keywords)
-
-    def regexp(expr, item):
-        reg = re.compile(expr)
-        return reg.search(item.lower()) is not None
-
     with db_session():
         conn = db.get_connection()
         conn.create_function('REGEXP', 2, regexp)
@@ -123,7 +141,7 @@ async def read_article_template(terminal: TerminalCLI):
     terminal.init()
     terminal.add_row('<bold>Feddly 閱讀器</bold>')
     terminal.add_menu('重點未讀文章', command=read_all_point_article)
-    terminal.add_menu('所有未讀文章', command=read_all_not_read_article)
+    terminal.add_menu('非重點未讀文章', command=read_all_not_read_article)
     terminal.add_menu('全部更新為已讀', command=read_all_not_read_article)
 
 
@@ -203,12 +221,34 @@ class ProgressStep:
         return update_progress(self.total, self.progress) + f'    {self.text}'
 
 
+async def update_article_with_steps(progress_step):
+    from crawler import FeedlyCralwer
+    progress_step.add_progress(text='打開browser')
+    crawler = FeedlyCralwer()
+    await crawler.init_browser()
+    progress_step.add_progress(text='登入中...')
+    await crawler.goto_feedly_index()
+    await crawler.goto_fb_login_page()
+    await crawler.fb_login()
+    progress_step.add_progress(text='頁面跳轉')
+    await crawler.click_all_page()
+    progress_step.add_progress(text='滾動頁面...')
+    await crawler.scroll_page()
+    progress_step.add_progress(text='取得資料')
+    data = await crawler.get_data()
+    progress_step.add_progress(text='關閉瀏覽器')
+    await crawler.close_browser()
+    progress_step.add_progress(text='資料下載完成')
+    item_crud.create_list(data)
+    progress_step.add_progress(text='資料儲存完成')
+
+
 async def update_articles(terminal: TerminalCLI):
     from threading import Thread
-    progress_step = ProgressStep(total=9)
+    progress_step = ProgressStep(total=8)
 
     def job(progress_step):
-        asyncio.run(get_feedly_content(progress_step))
+        asyncio.run(update_article_with_steps(progress_step))
 
     t = Thread(target=job, args=(progress_step,))
     t.start()
@@ -231,7 +271,7 @@ async def index_template(terminal: TerminalCLI):
     terminal.init()
     terminal.add_row('<bold>Feddly 閱讀器</bold>')
     terminal.add_menu('閱讀文章', command=read_article_template)
-    terminal.add_menu('更新資料', command=None)
+    terminal.add_menu('更新資料', command=update_articles)
 
 
 async def main():
