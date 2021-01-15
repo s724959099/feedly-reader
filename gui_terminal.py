@@ -90,7 +90,9 @@ class TerminalCLI:
 
     def add_row(self, text, next_count=True):
         text = self.to_terminal_color(text)
-        self.fsa[self.count:self.count + 1, 0:len(text)] = [text]
+        max_width = self.window.width
+        width = min(max_width - 1, len(text))
+        self.fsa[self.count:self.count + 1, 0:width] = [text[:width]]
         if next_count:
             self.count += 1
         return self.count

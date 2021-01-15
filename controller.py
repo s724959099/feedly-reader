@@ -19,7 +19,12 @@ class ItemCRUD:
             if item:
                 logger.warning(f'find {el.title}({el.href})')
                 continue
-            Item(**el)
+            try:
+                Item(**el)
+            except Exception as e:
+                logger.error(f'error {el.title}({el.href})')
+                pass
+
         logger.info(f'create done| count: {len(batch)}')
 
     @db_session()
@@ -27,6 +32,11 @@ class ItemCRUD:
                   lambda_fn: Optional[Callable] = lambda x: True
                   ):
         return Item.select(lambda_fn).count()
+
+    @db_session()
+    def update_all_to_read(self):
+        for el in Item.select(lambda x: not x.read):
+            el.read = True
 
     @db_session()
     def get_list(self,

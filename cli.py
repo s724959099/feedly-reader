@@ -105,18 +105,18 @@ async def read_articles(terminal: TerminalCLI, **kwargs):
     terminal.keys_register('<LEFT>', _left_command)
 
 
-async def read_all_not_read_article(terminal: TerminalCLI, **kwargs):
+async def read_all_not_point_article(terminal: TerminalCLI, **kwargs):
     global lambda_fn
     global execute_fn
     with db_session():
         conn = db.get_connection()
         conn.create_function('REGEXP', 2, regexp)
 
-        execute_fn = read_all_point_article
+        execute_fn = read_all_not_point_article
 
-        lambda_fn = lambda x: not x.read and not (
-                raw_sql("x.title REGEXP $(pattern)") or
-                raw_sql("x.summary REGEXP $(pattern)")
+        lambda_fn = lambda x: not x.read and (
+                raw_sql("x.title NOT REGEXP $(pattern)") and
+                raw_sql("x.summary NOT REGEXP $(pattern)")
         )
         await read_articles(terminal, **kwargs)
 
@@ -137,12 +137,17 @@ async def read_all_point_article(terminal: TerminalCLI, **kwargs):
         await read_articles(terminal, **kwargs)
 
 
+async def update_all_artiles_to_read(terminal: TerminalCLI):
+    item_crud.update_all_to_read()
+    await read_article_template(terminal)
+
+
 async def read_article_template(terminal: TerminalCLI):
     terminal.init()
     terminal.add_row('<bold>Feddly 閱讀器</bold>')
     terminal.add_menu('重點未讀文章', command=read_all_point_article)
-    terminal.add_menu('非重點未讀文章', command=read_all_not_read_article)
-    terminal.add_menu('全部更新為已讀', command=read_all_not_read_article)
+    terminal.add_menu('非重點未讀文章', command=read_all_not_point_article)
+    terminal.add_menu('全部更新為已讀', command=update_all_artiles_to_read)
 
 
 async def get_feedly_content(process_step):

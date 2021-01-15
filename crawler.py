@@ -74,8 +74,8 @@ class FeedlyCralwer:
         for el in dom('.entry').items():
             source = el('.meta-column').text()
             popular = el('.span.EntryEngagement').text()
-            title = el('.title').text()
-            href = el('.title').attr('href')
+            title = el('.entry__title').text()
+            href = el('.entry__title').attr('href')
             summary = el('.summary').text()
             item = Ezdict(
                 source=source,
