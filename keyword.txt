@@ -5,6 +5,9 @@ python
 async
 脚本
 小程序
+特斯拉
+tesla
+justpy
 自学
 自动
 机器学习

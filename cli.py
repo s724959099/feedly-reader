@@ -294,3 +294,6 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+    # progress_step = ProgressStep(total=8)
+    #
+    # asyncio.run(update_article_with_steps(progress_step))

@@ -72,7 +72,7 @@ class FeedlyCralwer:
         dom = pq(doc)
         ret = []
         for el in dom('.entry').items():
-            source = el('.meta-column').text()
+            source = el('entry__source').text()
             popular = el('.span.EntryEngagement').text()
             title = el('.entry__title').text()
             href = el('.entry__title').attr('href')
