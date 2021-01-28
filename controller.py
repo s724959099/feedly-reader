@@ -22,7 +22,7 @@ class ItemCRUD:
             try:
                 Item(**el)
             except Exception as e:
-                logger.trace(f'error {el.title}({el.href}) {e}')
+                logger.error(f'error {el.title}({el.href})')
                 pass
 
         logger.info(f'create done| count: {len(batch)}')
